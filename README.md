@@ -24,6 +24,8 @@ freemark.tablename_prefix=xm_
 
 #生成之后文件说明
 
+
+```
 └─entity
         user.html
         User.java
@@ -31,6 +33,8 @@ freemark.tablename_prefix=xm_
         UserController.java
         UserMapper.xml
         UserServiceImpl.java
+
+```
 
 user.html:html后台管理页面，可能不符合你自己的项目前端
 User.java：用户类
