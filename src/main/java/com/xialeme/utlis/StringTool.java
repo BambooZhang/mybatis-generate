@@ -2,11 +2,8 @@ package com.xialeme.utlis;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
 
 import com.xialeme.GenerateCode;
 
@@ -23,7 +20,7 @@ import com.xialeme.GenerateCode;
 public class StringTool {
     /** 
      * 功能：下横线转驼峰  abc_str:abcStr
-     * @param str 
+     * @param param
      * @return 
      */  
     public static String underlineToCamel(String param){  
@@ -46,7 +43,7 @@ public class StringTool {
     } 
     /** 
      * 功能：根据mysql_jdbc类型获取java类型简称String
-     * @param sqlType 
+     * @param fullType
      * @return 
      */  
     public static String fullType2JavaType(String fullType) {
@@ -59,15 +56,22 @@ public class StringTool {
     	}
         return str;
     }
-    
+
     /** 
      * 功能：根据mysql dataType类型获取VARCHAR_java.lang.String
-     * @param sqlType 
-     * @return 
+     * @param colType
+     * @param colLength
+     * @return
      */  
-    public static String sqlType2JavaFullType(String sqlType) {  
+    public static String sqlType2JavaFullType(String colType,Integer colLength) {
     	Map<String, String> typeMap=StringTool.getPropertiesValues("mysql.properties");
-    	
+
+        String  javaType=typeMap.get(colType.toUpperCase());
+    	if("INT".equals(colType.toUpperCase())&& Objects.nonNull(colLength)&&colLength.intValue()>6){ //处理有时候不规范的数据库设计int(11)这种类型对应int类型的问题
+            javaType="INTEGER_java.lang.Long";
+        }
+
+
        /* if(sqlType.equalsIgnoreCase("bit")){  
             return "boolean";  
         }else if(sqlType.equalsIgnoreCase("tinyint")){  
@@ -94,7 +98,7 @@ public class StringTool {
             return "Blod";  
         } */ 
           
-        return typeMap.get(sqlType.toUpperCase());
+        return javaType;
     }  
     
     
@@ -126,7 +130,7 @@ public class StringTool {
     
     public static void main(String[] args) {
     	//getPropertiesValues("mysql.properties");
-    	System.out.println(sqlType2JavaFullType("int"));
+    	System.out.println(sqlType2JavaFullType("int",5));
     	System.out.println(fullType2JavaType("INTEGER_java.lang.Integer"));
 	}
 }

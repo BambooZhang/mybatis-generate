@@ -4,11 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
-import java.lang.reflect.Type;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -18,7 +15,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import com.mysql.jdbc.StringUtils;
 import com.xialeme.entity.ColumnProperty;
@@ -27,25 +23,27 @@ import com.xialeme.entity.TableProperty;
 import com.xialeme.utlis.JdbcTool;
 import com.xialeme.utlis.StringTool;
 
-import junit.framework.Test;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import freemarker.template.utility.StringUtil;
 
 /**
  *   
  * 
  * @Title: Main.java 
  * @Package com.xialeme.main 
- * @Description: TODO(用一句话描述该文件做什么) 
+ * @Description: 根据Mysql表生成java代码：
+ * 0.生成mapping,dao,bean,servcice,vue.js
+ * 1.支持多个表生成源码，
+ * 2.INT(>11)映射成Long类型
  * @author bamboo  <a href=
  *         "mailto:zjcjava@163.com?subject=hello,bamboo&body=Dear Bamboo:%0d%0a描述你的问题："
  *         >Bamboo</a>   
- * @date 2017年4月25日 下午2:53:46 
- * @version V1.0   
+ * @since  2017年4月25日 下午2:53:46 
+ * 		2019年3月12日 下午2:53:46 
+ * @version V1.1   
  */
 
 public class GenerateCode {
@@ -54,7 +52,6 @@ public class GenerateCode {
 	static List<TableProperty> tablePropertyList=new ArrayList<TableProperty>();//表名
 	/***
 	 * 资源配置初始化
-	 * @param applicationConfig
 	 */
 	public static void init() {
 		// 类初始化后加载配置文件
@@ -75,6 +72,7 @@ public class GenerateCode {
 		
 		
 		//系统配置信息
+		//产生包名等配置信息
 		entity_package=entity_package!=null&&entity_package.length()>1?entity_package:base_package+"entity";
 		dao_package=dao_package!=null&&dao_package.length()>1?dao_package:dao_package+"dao";
 		sysConfig=new SysConfig(server, username, password,driver, ftl,projectAbsolutePath,base_package,entity_package,dao_package);
@@ -85,16 +83,32 @@ public class GenerateCode {
 		
 		for (String tablename : taleArry) {
 			//去掉前缀的对象
-			String objName=null;
+			String objName=tablename;
 			if(!StringUtils.isNullOrEmpty(tablename_prefix)){
 				objName=tablename.replace(tablename_prefix, "");
 			}
 			System.out.println(objName);
 			
 			String strtmp=StringTool.underlineToCamel(objName);
-			objName=strtmp.substring(0,1).toLowerCase()+strtmp.substring(1,strtmp.length());
+			objName=strtmp.substring(0,1).toLowerCase()+strtmp.substring(1,strtmp.length());//类名
+
+			//查询表名的注释信息
+			String tableComment="";
+			try {
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery("show table status WHERE name= '" + tablename+"'");
+				if (rs != null && rs.next()) {
+					tableComment = rs.getString("Comment");
+					//String comment = parse(createDDL);
+				}
+				rs.close();
+			}catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 			//表信息
-			tablePropertyList.add(new TableProperty(tablename,"表名",objName));
+			tablePropertyList.add(new TableProperty(tablename,tableComment,objName));
 		}
 		
 		
@@ -113,9 +127,15 @@ public class GenerateCode {
 			
 			while (rs.next()) {
 				String colname = rs.getString("Field");
-				String colType = rs.getString("Type").split("\\(")[0].toUpperCase();
+				String [] colTemp = rs.getString("Type").split("\\(");
+				String colType = colTemp[0].toUpperCase();
+				Integer colLength = null;
+				if(colTemp.length>1){
+					colLength = Integer.parseInt(colTemp[1].replaceAll("\\) *\\w*",""));
+				}
+
 				String colComment = rs.getString("Comment");
-				String tempType = StringTool.sqlType2JavaFullType(colType);
+				String tempType = StringTool.sqlType2JavaFullType(colType,colLength);
 				String [] tempArry=tempType.split("_");
 				String jdbcType = tempArry[0];
 				String javaFullType = tempArry[1];
@@ -124,7 +144,7 @@ public class GenerateCode {
 				System.out.println(colname+"\t"+colType+"\t"+javaType+"\t"+javaFullType);
 				
 				ColumnProperty columnProperty = new ColumnProperty(colname,
-						colType, colComment, StringTool.underlineToCamel(colname),jdbcType,
+						colType,colLength, colComment, StringTool.underlineToCamel(colname),jdbcType,
 						javaType, javaFullType);
 				columList.add(columnProperty);
 			}
@@ -137,6 +157,7 @@ public class GenerateCode {
 		}
 	}
 
+	//映射关键字段到源码模板中
 	public static void mappingProcess(TableProperty tableProperty,List<ColumnProperty> columList,String ftl) {
 		Configuration configuration = new Configuration();
 		configuration.setObjectWrapper(new DefaultObjectWrapper());
@@ -170,17 +191,28 @@ public class GenerateCode {
 			writer = new StringWriter();
 			xmlTemplate.process(context, writer);
 			createFile("xml",tableProperty.getObjName(),writer.toString());//生产xml文件
+
+
+			Template daoTemplate = configuration.getTemplate("entity_dao.ftl");
+			writer = new StringWriter();
+			daoTemplate.process(context, writer);
+			createFile("dao",tableProperty.getObjName(),writer.toString());//dao
 			
 			
 			Template controllerTemplate = configuration.getTemplate("entity_Controller.ftl");
 			writer = new StringWriter();
 			controllerTemplate.process(context, writer);
 			createFile("controller",tableProperty.getObjName(),writer.toString());//生产Controller文件
-			
+
+			Template serviceTemplate = configuration.getTemplate("entity_Service.ftl");
+			writer = new StringWriter();
+			serviceTemplate.process(context, writer);
+			createFile("service",tableProperty.getObjName(),writer.toString());//生产service文件
+
 			Template serviceImpTemplate = configuration.getTemplate("entity_ServiceImpl.ftl");
 			writer = new StringWriter();
 			serviceImpTemplate.process(context, writer);
-			createFile("serviceImpl",tableProperty.getObjName(),writer.toString());//生产service文件
+			createFile("serviceImpl",tableProperty.getObjName(),writer.toString());//生产serviceImpl文件
 		
 			Template htmlTemplate = configuration.getTemplate("entity_html.ftl");
 			writer = new StringWriter();
@@ -207,41 +239,57 @@ public class GenerateCode {
 	
 	
 
+	//创建文件
 	public static void createFile(String fileType,String entityName,String content) {
 		 try {  
 		String projectAbsolutePath=sysConfig.getProjectAbsolutePath();
-       	String currentFileDir=projectAbsolutePath.endsWith("/")?projectAbsolutePath:(projectAbsolutePath+"/")+sysConfig.getEntityPackage().replace(".", "/")+"/";
-       	File fileDir = new File(currentFileDir);
-   		if (!fileDir.exists()) {
-   			fileDir.mkdirs();
-   		}
-   		String sufix= ".txt";
+       	StringBuffer currentFileDir= new StringBuffer();
+			 currentFileDir.append(projectAbsolutePath.endsWith("/")?projectAbsolutePath:(projectAbsolutePath+"/"));
+			 currentFileDir.append(sysConfig.getBasePackage().replace(".", "/")+"/");
+   		String sufix= ".txt" ;
    		String objName=entityName.substring(0,1).toUpperCase()+entityName.substring(1,entityName.length());
-   		String outputFilePath =currentFileDir+objName+sufix;
    		switch (fileType) {
 		case "entity":
+			currentFileDir.append("entity/");
 			sufix= objName+".java";
 			break;
 		case "xml":
+			currentFileDir.append("xml/");
 			sufix= objName+"Mapper.xml";
 			break;
+		case "dao":
+			currentFileDir.append("mapper/");
+			sufix= objName+"Mapper.java";
+			break;
 		case "controller":
+			currentFileDir.append("controller/");
 			sufix= objName+"Controller.java";
 			break;
+		case "service":
+			currentFileDir.append("service/");
+			sufix= objName+"Service.java";
+			break;
 		case "serviceImpl":
+			currentFileDir.append("service/impl/");
 			sufix= objName+"ServiceImpl.java";
 			break;
 		case "html":
+			currentFileDir.append("html/");
 			sufix= entityName+".html";
 			break;
 		case "js":
+			currentFileDir.append("js/");
 			sufix= entityName+".js";
 			break;
 		default:
 			sufix= ".txt";
 			break;
 		}
-   		outputFilePath =currentFileDir+sufix;
+		 File fileDir = new File(currentFileDir.toString());
+		 if (!fileDir.exists()) {
+			 fileDir.mkdirs();
+		 }
+		String outputFilePath =currentFileDir+sufix;
    		System.out.println(outputFilePath);
    		
    		File f = new File(outputFilePath);  
@@ -265,10 +313,10 @@ public class GenerateCode {
 		init();
 		Connection con= JdbcTool.getConnection();
 		for (TableProperty tableProperty : tablePropertyList) {
+			System.out.println(tableProperty.getTableComment());
 			getColumnsByTable(con,tableProperty);
 		}
-		
-		
+
 	}
 
 }

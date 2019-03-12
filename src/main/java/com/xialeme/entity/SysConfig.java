@@ -19,7 +19,14 @@ public class SysConfig {
 	String projectAbsolutePath ;// 项目src路径
 	String basePackage ;// jabva base  Package
 	String entityPackage ;// jabvabena Package
-	private String daoPackage; // java daoPackage路径
+	String daoPackage; // java daoPackage路径
+	String controllerPackage; // java  路径
+	String xmlPackage; // xml  路径
+	String servicePackage; // service 路径
+	String jsPackage; // js 路径
+
+
+
 	String moduleName ;//模块名称根据basePackage最后一个字母获取
 	
 	

@@ -20,17 +20,19 @@ public class ColumnProperty {
 
 	private String colName; // 列名
 	private String colType; // 列名类型
+	private Integer colLength; // 列名类型长度
 	private String colComment; // 列注释,属性注释
 	private String javaName; // java属性名
 	private String jdbcType; // jdbcType mybatis 数据类型
 	private String javaType; // java类型缩写:String
 	private String javaFullType; // java类型全路径:java.lang.String
 
-	public ColumnProperty(String colName, String colType, String colComment,
+	public ColumnProperty(String colName, String colType, Integer colLength,String colComment,
 			String javaName, String jdbcType, String javaType, String javaFullType) {
 		super();
 		this.colName = colName;
 		this.colType = colType;
+		this.colLength = colLength;
 		this.colComment = colComment;
 		this.javaName = javaName;
 		this.jdbcType = jdbcType;
@@ -94,5 +96,12 @@ public class ColumnProperty {
 		this.jdbcType = jdbcType;
 	}
 
-	
+	public Integer getColLength() {
+		return colLength;
+	}
+
+	public ColumnProperty setColLength(Integer colLength) {
+		this.colLength = colLength;
+		return this;
+	}
 }

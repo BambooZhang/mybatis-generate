@@ -26,7 +26,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+//import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
@@ -62,11 +62,11 @@ public class ElasticsearchMain {
      */
 //    @Before
     public void before() throws Exception {
-        Map<String, String> map = new HashMap<String, String>();  
-        map.put("cluster.name", "elasticsearch_wenbronk");  
-        Settings.Builder settings = Settings.builder().put(map);  
-        client = TransportClient.builder().settings(settings).build()  
-                        .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("www.wenbronk.com"), Integer.parseInt("9300"))); 
+//        Map<String, String> map = new HashMap<String, String>();
+//        map.put("cluster.name", "elasticsearch_wenbronk");
+//        Settings.Builder settings = Settings.builder().put(map);
+//        client = TransportClient.builder().settings(settings).build()
+//                        .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("www.wenbronk.com"), Integer.parseInt("9300")));
     }
     
     /**
@@ -80,7 +80,7 @@ public class ElasticsearchMain {
 //                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("www.wenbronk.com"), 9300));
 
         // 通过setting对象指定集群配置信息, 配置的集群名
-        Settings settings = Settings.settingsBuilder().put("cluster.name", "my-application") // 设置集群名
+  /*      Settings settings = Settings.settingsBuilder().put("cluster.name", "my-application") // 设置集群名
 //                .put("client.transport.sniff", true) // 开启嗅探 , 开启后会一直连接不上, 原因未知
 //                .put("network.host", "192.168.50.37")
                 .put("client.transport.ignore_cluster_name", true) //忽略集群名字验证, 打开后集群名字不对也能连接上
@@ -89,7 +89,7 @@ public class ElasticsearchMain {
                 .build();
          client = TransportClient.builder().settings(settings).build()
                  .addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress("192.168.0.91", 9300)));
-         
+         */
          
          // 默认5s
          // 多久打开连接, 默认5s
@@ -169,8 +169,8 @@ public class ElasticsearchMain {
         String type = response.getType();
         String id = response.getId();
         long version = response.getVersion();
-        boolean created = response.isCreated();
-        System.out.println(index + " : " + type + ": " + id + ": " + version + ": " + created);
+//        boolean created = response.isCreated();
+//        System.out.println(index + " : " + type + ": " + id + ": " + version + ": " + created);
     }
 
     /**
