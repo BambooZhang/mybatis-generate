@@ -131,7 +131,7 @@ public class GenerateCode {
 				String colType = colTemp[0].toUpperCase();
 				Integer colLength = null;
 				if(colTemp.length>1){
-					colLength = Integer.parseInt(colTemp[1].replaceAll("\\) *\\w*",""));
+					colLength = Integer.parseInt(colTemp[1].replaceAll("\\)[\\w ]*",""));
 				}
 
 				String colComment = rs.getString("Comment");
@@ -310,6 +310,7 @@ public class GenerateCode {
 	
 	
 	public static void main(String[] args) {
+
 		init();
 		Connection con= JdbcTool.getConnection();
 		for (TableProperty tableProperty : tablePropertyList) {

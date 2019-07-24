@@ -4,7 +4,7 @@ package ${sysConfig.basePackage}.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.Objects;
-
+import com.github.pagehelper.PageInfo;
 
 import com.yifu.common.constant.PublicCode;
 import com.yifu.common.entity.vo.PageSearchVo;
